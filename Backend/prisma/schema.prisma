@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id            Int      @id @default(autoincrement()) @map("id_usuario")
+  nome          String   @db.NVarChar(100)
+  sobrenome     String?  @db.NVarChar(100)
+  email         String   @unique @db.NVarChar(255)
+  senhaHash     String   @map("senha_hash") @db.NVarChar(255)
+  tipoUsuario   String   @map("tipo_usuario") @db.VarChar(20)
+  dataCadastro  DateTime @default(dbgenerated("sysdatetime()")) @map("data_cadastro") @db.DateTime2(0)
+
+  concessionaria Concessionaria?
+  simulacoes     Simulacao[]
+
+  @@map("USUARIO")
+}
+
+model Marca {
+  id     Int       @id @default(autoincrement()) @map("id_marca")
+  nome   String    @unique @db.NVarChar(100)
+  veiculos Veiculo[]
+
+  @@map("MARCA")
+}
+
+model Categoria {
+  id       Int       @id @default(autoincrement()) @map("id_categoria")
+  nome     String    @unique @db.NVarChar(100)
+  veiculos Veiculo[]
+
+  @@map("CATEGORIA")
+}
+
+model Concessionaria {
+  id          Int       @id @default(autoincrement()) @map("id_concessionaria")
+  usuarioId   Int       @unique @map("id_usuario")
+  nomeEmpresa String    @map("nome_empresa") @db.NVarChar(200)
+  cnpj        String    @unique @db.VarChar(18)
+
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id])
+  veiculos Veiculo[]
+
+  @@map("CONCESSIONARIA")
+}
+
+model Veiculo {
+  id                Int       @id @default(autoincrement()) @map("id_veiculo")
+  marcaId           Int       @map("id_marca")
+  categoriaId       Int?      @map("id_categoria")
+  tipo              String    @db.VarChar(30)
+  modelo            String    @db.NVarChar(150)
+  ano               Int?      @db.SmallInt
+  preco             Decimal   @db.Decimal(12, 2)
+  consumoKwh100km   Decimal?  @map("consumo_kwh_100km") @db.Decimal(10, 3)
+  imagem            String?   @db.NVarChar(500)
+  ativo             Boolean   @default(true) @db.Bit
+  dataCadastro      DateTime  @default(dbgenerated("sysdatetime()")) @map("data_cadastro") @db.DateTime2(0)
+  concessionariaId  Int?      @map("id_concessionaria")
+
+  marca           Marca            @relation(fields: [marcaId], references: [id])
+  categoria       Categoria?       @relation(fields: [categoriaId], references: [id])
+  concessionaria  Concessionaria?  @relation(fields: [concessionariaId], references: [id])
+  simulacoes      Simulacao[]
+
+  @@map("VEICULO")
+}
+
+model Simulacao {
+  id                  Int       @id @default(autoincrement()) @map("id_simulacao")
+  usuarioId           Int?      @map("id_usuario")
+  veiculoId           Int       @map("id_veiculo")
+  kmDia               Decimal   @map("km_dia") @db.Decimal(10, 2)
+  consumoKwh100km     Decimal   @map("consumo_kwh_100km") @db.Decimal(10, 3)
+  custoEnergiaKwh     Decimal   @map("custo_energia_kwh") @db.Decimal(10, 4)
+  horasSolDia         Decimal   @map("horas_sol_dia") @db.Decimal(5, 2)
+  potenciaPainelW     Decimal   @map("potencia_painel_w") @db.Decimal(10, 2)
+  custoSistema        Decimal   @map("custo_sistema") @db.Decimal(12, 2)
+  consumoKwhDia       Decimal?  @map("consumo_kwh_dia") @db.Decimal(12, 3)
+  consumoKwhMes       Decimal?  @map("consumo_kwh_mes") @db.Decimal(12, 3)
+  custoEnergiaDia     Decimal?  @map("custo_energia_dia") @db.Decimal(12, 2)
+  custoEnergiaMes     Decimal?  @map("custo_energia_mes") @db.Decimal(12, 2)
+  geracaoPainelKwhDia Decimal?  @map("geracao_painel_kwh_dia") @db.Decimal(12, 3)
+  geracaoSolarKwhMes  Decimal?  @map("geracao_solar_kwh_mes") @db.Decimal(12, 3)
+  quantidadePaineis   Int?      @map("quantidade_paineis")
+  economiaMensal      Decimal?  @map("economia_mensal") @db.Decimal(12, 2)
+  economiaAnual       Decimal?  @map("economia_anual") @db.Decimal(12, 2)
+  tempoRetornoAnos    Decimal?  @map("tempo_retorno_anos") @db.Decimal(10, 2)
+  dataSimulacao       DateTime  @default(dbgenerated("sysdatetime()")) @map("data_simulacao") @db.DateTime2(0)
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+  veiculo Veiculo  @relation(fields: [veiculoId], references: [id])
+
+  @@index([usuarioId], map: "IX_SIMULACAO_USUARIO")
+  @@index([veiculoId], map: "IX_SIMULACAO_VEICULO")
+  @@map("SIMULACAO")
+}
